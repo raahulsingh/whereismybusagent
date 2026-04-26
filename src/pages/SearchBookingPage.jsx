@@ -35,7 +35,7 @@ function StopAutocomplete({ label, placeholder, value, onChange }) {
     }
     let cancelled = false;
     setLoading(true);
-    const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+    const baseURL = import.meta.env.VITE_API_URL || 'https://where-is-my-bus-backend-ox7r.onrender.com/api';
     axios.get(`${baseURL}/stops/search?q=${encodeURIComponent(debouncedQuery)}`)
       .then(res => {
         if (!cancelled) {

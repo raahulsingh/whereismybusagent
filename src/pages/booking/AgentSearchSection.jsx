@@ -24,7 +24,7 @@ function StopInput({ label, placeholder, value, onChange }) {
   useEffect(() => {
     if (debounced.length < 2) { setSuggestions([]); return; }
     let c = false;
-    const base = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+    const base = import.meta.env.VITE_API_URL || 'https://where-is-my-bus-backend-ox7r.onrender.com/api';
     axios.get(`${base}/stops/search?q=${encodeURIComponent(debounced)}`)
       .then(r => {
         if (c) return;

@@ -48,7 +48,7 @@ export default function AgentPaymentPage({ trip, searchInfo, seats, passengers, 
         if (p.paymentType === 'prepaid') {
           try {
             const orderRes = await fetch(
-              (import.meta.env.VITE_API_URL || 'http://localhost:8080/api') + '/payment/create-order',
+              (import.meta.env.VITE_API_URL || 'https://where-is-my-bus-backend-ox7r.onrender.com/api') + '/payment/create-order',
               {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -73,7 +73,7 @@ export default function AgentPaymentPage({ trip, searchInfo, seats, passengers, 
                   // Verify payment
                   try {
                     const verifyRes = await fetch(
-                      (import.meta.env.VITE_API_URL || 'http://localhost:8080/api') + '/payment/verify',
+                      (import.meta.env.VITE_API_URL || 'https://where-is-my-bus-backend-ox7r.onrender.com/api') + '/payment/verify',
                       {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },

@@ -37,6 +37,16 @@ export default function PrepareChartPage() {
     }
   }, [selectedBus, selectedDate]);
 
+  useEffect(() => {
+    if (selectedBus && buses.length > 0) {
+      const bus = buses.find(b => b.id == selectedBus);
+      if (bus && !chartData?.exists) {
+        setDriverName(bus.driver_name || '');
+        setDriverPhone(bus.driver_phone || '');
+      }
+    }
+  }, [selectedBus, buses, chartData]);
+
   const fetchBuses = async () => {
     try {
       const res = await axios.get(`${API_BASE}/agent/my-buses`, {
@@ -45,6 +55,13 @@ export default function PrepareChartPage() {
       setBuses(res.data);
     } catch (err) {
       console.error('Failed to fetch buses');
+    }
+  };
+
+  const handlePhoneChange = (setter) => (e) => {
+    const val = e.target.value.replace(/\D/g, ''); // Numeric only
+    if (val.length <= 10) {
+      setter(val);
     }
   };
 
@@ -58,13 +75,6 @@ export default function PrepareChartPage() {
         params: { busId: selectedBus, date: selectedDate }
       });
       setChartData(res.data);
-      if (!res.data.exists) {
-        // Clear form if new chart
-        setDriverName('');
-        setDriverPhone('');
-        setConductorName('');
-        setConductorPhone('');
-      }
     } catch (err) {
       setError('Failed to check chart status');
     } finally {
@@ -74,8 +84,21 @@ export default function PrepareChartPage() {
 
   const handlePrepareChart = async (e) => {
     e.preventDefault();
+    
+    // Validate driver matching
+    const bus = buses.find(b => b.id == selectedBus);
+    if (bus && bus.driver_name && driverName.trim().toLowerCase() !== bus.driver_name.toLowerCase()) {
+      setError(`Warning: The entered driver name doesn't match the assigned driver (${bus.driver_name})`);
+      return;
+    }
+
     if (!driverName || !driverPhone || !conductorName || !conductorPhone) {
       setError('Please fill all driver and conductor details');
+      return;
+    }
+
+    if (driverPhone.length !== 10 || conductorPhone.length !== 10) {
+      setError('Mobile numbers must be exactly 10 digits');
       return;
     }
 
@@ -188,7 +211,7 @@ export default function PrepareChartPage() {
                   </div>
                   <div className="form-group">
                     <label>Driver Phone</label>
-                    <input type="text" value={driverPhone} onChange={e => setDriverPhone(e.target.value)} placeholder="Mobile number" className="form-control" />
+                    <input type="text" value={driverPhone} onChange={handlePhoneChange(setDriverPhone)} placeholder="10-digit number" className="form-control" />
                   </div>
                   <div className="form-group">
                     <label>Conductor Name</label>
@@ -196,7 +219,7 @@ export default function PrepareChartPage() {
                   </div>
                   <div className="form-group">
                     <label>Conductor Phone</label>
-                    <input type="text" value={conductorPhone} onChange={e => setConductorPhone(e.target.value)} placeholder="Mobile number" className="form-control" />
+                    <input type="text" value={conductorPhone} onChange={handlePhoneChange(setConductorPhone)} placeholder="10-digit number" className="form-control" />
                   </div>
                 </div>
                 <button type="submit" className="btn btn-primary mt-3">

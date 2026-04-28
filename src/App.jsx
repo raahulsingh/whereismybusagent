@@ -5,6 +5,9 @@ import BusesPage from './pages/BusesPage';
 import TripsPage from './pages/TripsPage';
 import AgentBookingPage from './pages/AgentBookingPage';
 import BookingsPage from './pages/BookingsPage';
+import DriversPage from './pages/DriversPage';
+import PrepareChartPage from './pages/PrepareChartPage';
+
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('agent_token');
@@ -21,8 +24,10 @@ function App() {
           <Route index element={<Navigate to="/buses" replace />} />
           <Route path="buses" element={<BusesPage />} />
           <Route path="trips" element={<TripsPage />} />
+          <Route path="drivers" element={<DriversPage />} />
           <Route path="book/*" element={<AgentBookingPage />} />
           <Route path="bookings" element={<BookingsPage />} />
+          <Route path="prepare-chart" element={<PrepareChartPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

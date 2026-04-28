@@ -2,6 +2,10 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'https://where-is-my-bus-backend-ox7r.onrender.com/api',
+  timeout: 10000, // Prevent hanging requests
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 // Request interceptor to automatically attach the agent token
@@ -13,24 +17,29 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // Response interceptor to handle unauthorized access
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      // Clear token and redirect to login
+    if (error.response?.status === 401) {
       localStorage.removeItem('agent_token');
       localStorage.removeItem('agent_data');
+
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
     }
-    return Promise.reject(error);
+
+    // Surface a cleaner error message downstream
+    const message =
+      error.response?.data?.message ||
+      error.message ||
+      'An unexpected error occurred';
+
+    return Promise.reject(new Error(message));
   }
 );
 

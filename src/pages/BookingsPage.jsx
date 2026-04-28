@@ -153,13 +153,22 @@ export default function BookingsPage() {
             />
           </div>
           {selectedDate && (
-            <button 
-              className="btn btn-outline" 
-              onClick={clearDateFilter}
-              style={{ marginBottom: '0.05rem', fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
-            >
-              ✕ Clear Date
-            </button>
+            <>
+              <button 
+                className="btn btn-outline" 
+                onClick={clearDateFilter}
+                style={{ marginBottom: '0.05rem', fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
+              >
+                ✕ Clear Date
+              </button>
+              <button 
+                className="btn btn-primary"
+                style={{ marginBottom: '0.05rem', fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
+                onClick={() => window.location.href = `/prepare-chart?busId=${selectedBus}&date=${selectedDate}`}
+              >
+                Prepare Chart
+              </button>
+            </>
           )}
         </div>
       </div>

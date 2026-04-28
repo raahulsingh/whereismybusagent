@@ -297,7 +297,9 @@ export default function PrepareChartPage() {
                 </tr>
               </thead>
               <tbody>
-                {chartData.passengers.length > 0 ? chartData.passengers.map((p, idx) => (
+                {chartData.passengers.length > 0 ? chartData.passengers
+                  .sort((a, b) => a.seat_no.localeCompare(b.seat_no, undefined, { numeric: true, sensitivity: 'base' }))
+                  .map((p, idx) => (
                   <tr key={idx}>
                     <td className="font-bold">{p.seat_no}</td>
                     <td>{p.passenger_name}</td>

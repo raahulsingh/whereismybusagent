@@ -67,6 +67,7 @@ export default function AgentPaymentPage({ trip, searchInfo, seats, passengers, 
                 description: `Seat ${p.seatNo} — ${searchInfo.from} → ${searchInfo.to}`,
                 order_id: orderData.orderId,
                 prefill: { name: p.name, contact: p.phone, email: p.email },
+                image: 'https://whereismybusagent.vercel.app/logo_blue.png',
                 theme: { color: '#e65100' },
                 handler: async (response) => {
                   // Verify payment

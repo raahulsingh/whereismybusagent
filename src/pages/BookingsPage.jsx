@@ -189,6 +189,7 @@ export default function BookingsPage() {
               <div style={{ marginBottom: '0.75rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                 Showing <strong>{bookings.length}</strong> booking{bookings.length !== 1 ? 's' : ''}
                 {selectedDate ? ` on ${selectedDate}` : ''}
+                <span style={{ marginLeft: '0.5rem' }}>(Confirmed + Pending OTP)</span>
               </div>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead>
@@ -199,6 +200,7 @@ export default function BookingsPage() {
                     <th style={{ padding: '1rem 0.5rem' }}>Route</th>
                     <th style={{ padding: '1rem 0.5rem' }}>Date</th>
                     <th style={{ padding: '1rem 0.5rem' }}>Payment</th>
+                    <th style={{ padding: '1rem 0.5rem' }}>Status</th>
                     <th style={{ padding: '1rem 0.5rem' }}>Actions</th>
                   </tr>
                 </thead>
@@ -219,6 +221,11 @@ export default function BookingsPage() {
                       <td style={{ padding: '1rem 0.5rem' }}>
                         <span className={`badge ${b.payment_type === 'cash' ? 'badge-warning' : 'badge-success'}`}>
                           {b.payment_type?.toUpperCase()}
+                        </span>
+                      </td>
+                      <td style={{ padding: '1rem 0.5rem' }}>
+                        <span className={`badge ${b.status === 'confirmed' ? 'badge-success' : 'badge-warning'}`}>
+                          {b.status === 'pending_otp' ? 'PENDING' : b.status?.toUpperCase()}
                         </span>
                       </td>
                       <td style={{ padding: '1rem 0.5rem' }}>

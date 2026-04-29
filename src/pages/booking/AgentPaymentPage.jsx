@@ -47,16 +47,15 @@ export default function AgentPaymentPage({ trip, searchInfo, seats, passengers, 
         // If prepaid → open Razorpay first
         if (p.paymentType === 'prepaid') {
           try {
-            const orderRes = await fetch(
-              (import.meta.env.VITE_API_URL || 'https://where-is-my-bus-backend-ox7r.onrender.com/api') + '/payment/create-order',
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tripId: trip.tripId, fromStop: searchInfo.from, toStop: searchInfo.to, seatType: 'seat', seats: 1, receipt: `agent_${trip.tripId}_${Date.now()}` })
-              }
-            );
-            const orderData = await orderRes.json();
-            if (orderData.error) { throw new Error(orderData.error); }
+            const orderRes = await api.post('/payment/create-order', {
+              tripId: trip.tripId,
+              fromStop: searchInfo.from,
+              toStop: searchInfo.to,
+              seatType: 'seat',
+              seats: 1,
+              receipt: `agent_${trip.tripId}_${Date.now()}`
+            });
+            const orderData = orderRes.data;
 
             // Open Razorpay
             await new Promise((resolve, reject) => {
@@ -72,20 +71,12 @@ export default function AgentPaymentPage({ trip, searchInfo, seats, passengers, 
                 handler: async (response) => {
                   // Verify payment
                   try {
-                    const verifyRes = await fetch(
-                      (import.meta.env.VITE_API_URL || 'https://where-is-my-bus-backend-ox7r.onrender.com/api') + '/payment/verify',
-                      {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          razorpay_order_id: response.razorpay_order_id,
-                          razorpay_payment_id: response.razorpay_payment_id,
-                          razorpay_signature: response.razorpay_signature,
-                        })
-                      }
-                    );
-                    const verifyData = await verifyRes.json();
-                    if (verifyData.verified) resolve();
+                    const verifyRes = await api.post('/payment/verify', {
+                      razorpay_order_id: response.razorpay_order_id,
+                      razorpay_payment_id: response.razorpay_payment_id,
+                      razorpay_signature: response.razorpay_signature,
+                    });
+                    if (verifyRes.data.verified) resolve();
                     else reject(new Error('Payment verification failed'));
                   } catch { reject(new Error('Payment verification failed')); }
                 },

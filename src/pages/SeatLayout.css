@@ -74,3 +74,38 @@
 .seat.booked:hover {
   background-color: #b91c1c;
 }
+
+.seat.locked {
+  background-color: #f59e0b;
+  border-color: #d97706;
+  color: white;
+  cursor: not-allowed;
+}
+
+.legend-dot.locked {
+  background-color: #f59e0b;
+}
+
+.seat-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.legend-dot.available { background-color: white; border: 1px solid #cbd5e1; }
+.legend-dot.booked { background-color: #ef4444; }
+.legend-dot.selected { background-color: #3b82f6; }

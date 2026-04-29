@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../api';
 import './SeatLayout.css';
@@ -12,6 +12,7 @@ export default function SeatLayoutPage() {
   
   const [layoutData, setLayoutData] = useState(null);
   const [selectedSeat, setSelectedSeat] = useState(null);
+  const selectedSeatRef = useRef(null);
   const [bookedSeatDetails, setBookedSeatDetails] = useState(null);
   const [bookingForm, setBookingForm] = useState({
     passengerName: '', passengerAge: '', passengerGender: '', 
@@ -22,29 +23,84 @@ export default function SeatLayoutPage() {
 
   const navigate = useNavigate();
 
+  // Keep ref in sync with state for cleanup
+  useEffect(() => { selectedSeatRef.current = selectedSeat; }, [selectedSeat]);
+
   useEffect(() => {
     fetchLayout();
+    // Auto-refresh every 5 seconds to keep locks in sync
+    const interval = setInterval(fetchLayout, 5000);
+    return () => clearInterval(interval);
   }, [tripId, travelDate]);
+
+  // Cleanup: unlock seat when agent leaves the page
+  useEffect(() => {
+    return () => {
+      // On unmount, unlock any selected seat
+      const seat = selectedSeatRef.current;
+      if (seat) {
+        const agentData = JSON.parse(localStorage.getItem('agent_data') || '{}');
+        // Use navigator.sendBeacon for reliable cleanup on page leave
+        const payload = JSON.stringify({
+          tripId, seatNo: seat,
+          userId: 'agent-' + (agentData.id || 'unknown')
+        });
+        const baseUrl = api.defaults.baseURL || '';
+        navigator.sendBeacon(baseUrl + '/booking/unlock', new Blob([payload], { type: 'application/json' }));
+      }
+    };
+  }, [tripId]);
 
   const fetchLayout = async () => {
     try {
       const res = await api.get(`/agent/layout/${tripId}?date=${travelDate}`);
       setLayoutData(res.data);
     } catch (e) {
-      alert(e.response?.data?.error || 'Failed to fetch layout');
+      console.error('Layout fetch error:', e.response?.data?.error || e.message);
     }
   };
 
-  const handleSeatClick = (seatObj) => {
+  const handleSeatClick = async (seatObj) => {
     const seatId = seatObj.id;
     if (layoutData.bookedSeats && layoutData.bookedSeats[seatId]) {
       // It's booked -> show details
       setBookedSeatDetails(layoutData.bookedSeats[seatId]);
       setSelectedSeat(null);
+    } else if (layoutData.lockedSeats && layoutData.lockedSeats.includes(seatId) && selectedSeat !== seatId) {
+      // Locked by someone else — just show alert, stay on page
+      alert("This seat is currently reserved by another user/agent. Please choose a different seat.");
     } else {
-      // It's available -> allow booking
-      setSelectedSeat(seatId);
-      setBookedSeatDetails(null);
+      // Toggle selection with locking
+      if (selectedSeat === seatId) {
+        // DESELECT & UNLOCK
+        try {
+          const agentData = JSON.parse(localStorage.getItem('agent_data') || '{}');
+          await api.post('/booking/unlock', {
+            tripId,
+            seatNo: seatId,
+            userId: 'agent-' + (agentData.id || 'unknown')
+          });
+        } catch (e) { console.error("Unlock failed", e); }
+        setSelectedSeat(null);
+      } else {
+        // SELECT & LOCK
+        const agentData = JSON.parse(localStorage.getItem('agent_data') || '{}');
+        try {
+          await api.post('/booking/lock', {
+            tripId,
+            seatNo: seatId,
+            userId: 'agent-' + (agentData.id || 'unknown'),
+            travelDate
+          });
+          setSelectedSeat(seatId);
+          setBookedSeatDetails(null);
+        } catch (e) {
+          // Lock failed — seat taken by someone else. Just show message, stay on page.
+          const msg = e.response?.data?.error || "Seat is currently unavailable. Please choose another seat.";
+          alert(msg);
+          // Don't crash — just stay on the seat layout
+        }
+      }
     }
   };
 
@@ -120,8 +176,9 @@ export default function SeatLayoutPage() {
           </div>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <div className="seat-legend">
-              <span className="legend-item"><span className="legend-dot available"></span> Available ({availableCount})</span>
-              <span className="legend-item"><span className="legend-dot booked"></span> Booked ({bookedCount})</span>
+              <span className="legend-item"><span className="legend-dot available"></span> Available</span>
+              <span className="legend-item"><span className="legend-dot locked"></span> Reserved</span>
+              <span className="legend-item"><span className="legend-dot booked"></span> Booked</span>
               <span className="legend-item"><span className="legend-dot selected"></span> Selected</span>
             </div>
           </div>
@@ -150,11 +207,13 @@ export default function SeatLayoutPage() {
                     return <div key={cIdx} className="seat aisle"></div>;
                   }
                   const isBooked = !!(layoutData.bookedSeats && layoutData.bookedSeats[seat.id]);
+                  const isLockedByOther = layoutData.lockedSeats && layoutData.lockedSeats.includes(seat.id) && selectedSeat !== seat.id;
                   const isSelected = selectedSeat === seat.id;
                   
                   let cls = 'seat standard';
                   if (seat.type === 'sleeper') cls = 'seat sleeper';
                   if (isBooked) cls += ' booked';
+                  else if (isLockedByOther) cls += ' locked';
                   else if (isSelected) cls += ' selected';
                   
                   return (

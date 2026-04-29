@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../../api';
 
 export default function AgentPaymentPage({ trip, searchInfo, seats, passengers, onBooked, onBack }) {
@@ -7,6 +7,7 @@ export default function AgentPaymentPage({ trip, searchInfo, seats, passengers, 
   const [otpModal, setOtpModal] = useState({ show: false, ref: '', idx: -1 });
   const [otp, setOtp] = useState('');
   const [stage, setStage] = useState('summary');
+  const [countdown, setCountdown] = useState(10);
 
   const travelDate = searchInfo?.date || new Date().toISOString().split('T')[0];
   const hasPrepaid = passengers.some(p => p.paymentType === 'prepaid');
@@ -39,6 +40,27 @@ export default function AgentPaymentPage({ trip, searchInfo, seats, passengers, 
 
   const confirmBooking = async () => {
     setBooking(true); setError(''); setStage('processing');
+
+    // ── PRE-PAYMENT LOCK CHECK ──
+    // Verify all seats are still locked by this agent before charging money
+    const agentData = JSON.parse(localStorage.getItem('agent_data') || '{}');
+    const agentUserId = 'agent-' + (agentData.id || 'unknown');
+    
+    for (const p of passengers) {
+      try {
+        const lockRes = await api.post('/booking/lock', {
+          tripId: trip.tripId, seatNo: p.seatNo,
+          userId: agentUserId, travelDate
+        });
+      } catch (e) {
+        const msg = e.response?.data?.error || 'is no longer available';
+        setStage('failed');
+        setError(`Seat ${p.seatNo}: ${msg}. Please go back and select another seat.`);
+        setBooking(false);
+        return;
+      }
+    }
+
     const refs = [];
     try {
       for (let i = 0; i < passengers.length; i++) {
@@ -117,6 +139,31 @@ export default function AgentPaymentPage({ trip, searchInfo, seats, passengers, 
     } catch (e) { setError(e.response?.data?.error || 'OTP verification failed'); }
   };
 
+  // FAILED — unlock all seats and auto-redirect in 10s
+  useEffect(() => {
+    if (stage === 'failed') {
+      // Unlock all locked seats
+      const agentData = JSON.parse(localStorage.getItem('agent_data') || '{}');
+      const agentUserId = 'agent-' + (agentData.id || 'unknown');
+      passengers.forEach(p => {
+        api.post('/booking/unlock', { tripId: trip.tripId, seatNo: p.seatNo, userId: agentUserId }).catch(() => {});
+      });
+
+      // Countdown & redirect
+      let count = 10;
+      setCountdown(count);
+      const timer = setInterval(() => {
+        count--;
+        setCountdown(count);
+        if (count <= 0) {
+          clearInterval(timer);
+          window.location.href = '/book/search';
+        }
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [stage]);
+
   // PROCESSING
   if (stage === 'processing') {
     return (
@@ -147,6 +194,7 @@ export default function AgentPaymentPage({ trip, searchInfo, seats, passengers, 
     );
   }
 
+
   // FAILED
   if (stage === 'failed') {
     return (
@@ -154,11 +202,17 @@ export default function AgentPaymentPage({ trip, searchInfo, seats, passengers, 
         <div style={{ background: '#fff', borderRadius: 20, padding: '60px 40px', boxShadow: '0 8px 40px rgba(0,0,0,0.1)' }}>
           <div style={{ fontSize: 64, marginBottom: 16 }}>❌</div>
           <div style={{ fontSize: 22, fontWeight: 800, color: '#ef4444', marginBottom: 8 }}>Booking Failed</div>
-          <div style={{ fontSize: 14, color: '#64748b', marginBottom: 20 }}>{error || 'Something went wrong'}</div>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-            <button onClick={onBack} style={{ padding: '12px 24px', background: '#f1f5f9', border: 'none', borderRadius: 10, fontWeight: 600, cursor: 'pointer' }}>← Back</button>
-            <button onClick={() => { setStage('summary'); setError(''); }} style={{ padding: '12px 24px', background: '#e65100', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>Try Again</button>
+          <div style={{ fontSize: 14, color: '#64748b', marginBottom: 12 }}>{error || 'Something went wrong'}</div>
+          <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 20 }}>
+            Redirecting to Search in <strong style={{ color: '#ef4444' }}>{countdown}</strong> seconds...
           </div>
+          <div style={{ width: '100%', height: 4, background: '#fee2e2', borderRadius: 2, overflow: 'hidden', marginBottom: 20 }}>
+            <div style={{ width: `${(countdown / 10) * 100}%`, height: '100%', background: '#ef4444', transition: 'width 1s linear', borderRadius: 2 }} />
+          </div>
+          <button onClick={() => { window.location.href = '/book/search'; }}
+            style={{ padding: '12px 24px', background: '#f1f5f9', border: 'none', borderRadius: 10, fontWeight: 600, cursor: 'pointer', fontSize: 14, color: '#475569' }}>
+            Go to Search Now
+          </button>
         </div>
       </div>
     );

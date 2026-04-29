@@ -33,13 +33,8 @@ api.interceptors.response.use(
       }
     }
 
-    // Surface a cleaner error message downstream
-    const message =
-      error.response?.data?.message ||
-      error.message ||
-      'An unexpected error occurred';
-
-    return Promise.reject(new Error(message));
+    // Preserve original error so catch blocks can access error.response.data
+    return Promise.reject(error);
   }
 );
 

@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api';
-import { UserPlus, User, Phone, Trash2 } from 'lucide-react';
+import { UserPlus, User, Phone, Mail, Lock } from 'lucide-react';
 
 export default function DriversPage() {
   const [drivers, setDrivers] = useState([]);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -26,17 +28,22 @@ export default function DriversPage() {
 
   const handleAddDriver = async (e) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      alert('Name, email, and password are required');
+      return;
+    }
 
     setSubmitting(true);
     try {
-      await api.post('/agent/drivers', { name, phone });
+      await api.post('/agent/drivers', { name, phone, email, password });
       setName('');
       setPhone('');
+      setEmail('');
+      setPassword('');
       fetchDrivers();
       alert('Driver added successfully');
     } catch (e) {
-      alert(e.message || 'Failed to add driver');
+      alert(e.response?.data?.error || e.message || 'Failed to add driver');
     } finally {
       setSubmitting(false);
     }
@@ -58,13 +65,34 @@ export default function DriversPage() {
             </h3>
             <form onSubmit={handleAddDriver}>
               <div className="input-group">
-                <label>Full Name</label>
+                <label>Full Name *</label>
                 <input 
                   type="text" 
                   placeholder="Enter driver name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
+                />
+              </div>
+              <div className="input-group">
+                <label>Email (Login ID) *</label>
+                <input 
+                  type="email" 
+                  placeholder="driver@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="input-group">
+                <label>Password *</label>
+                <input 
+                  type="password" 
+                  placeholder="Set login password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
                 />
               </div>
               <div className="input-group">
@@ -97,27 +125,34 @@ export default function DriversPage() {
               <p className="text-muted">No drivers found.</p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[500px]">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-2">Name</th>
-                      <th className="text-left py-2">Phone</th>
+                      <th className="text-left py-2 whitespace-nowrap">Name</th>
+                      <th className="text-left py-2 whitespace-nowrap">Email (Login ID)</th>
+                      <th className="text-left py-2 whitespace-nowrap">Phone</th>
                     </tr>
                   </thead>
                   <tbody>
                     {drivers.map(driver => (
                       <tr key={driver.id} className="border-b last:border-0 hover:bg-slate-50">
-                        <td className="py-3">
+                        <td className="py-3 whitespace-nowrap">
                           <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
                               <User size={14} />
                             </div>
                             <span className="font-medium">{driver.name}</span>
                           </div>
                         </td>
-                        <td className="py-3 text-muted">
+                        <td className="py-3 text-muted whitespace-nowrap">
                           <div className="flex items-center gap-2">
-                            <Phone size={14} />
+                            <Mail size={14} className="shrink-0" />
+                            {driver.email || 'N/A'}
+                          </div>
+                        </td>
+                        <td className="py-3 text-muted whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <Phone size={14} className="shrink-0" />
                             {driver.phone || 'N/A'}
                           </div>
                         </td>

@@ -189,7 +189,6 @@ export default function BookingsPage() {
               <div style={{ marginBottom: '0.75rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                 Showing <strong>{bookings.length}</strong> booking{bookings.length !== 1 ? 's' : ''}
                 {selectedDate ? ` on ${selectedDate}` : ''}
-                <span style={{ marginLeft: '0.5rem' }}>(Confirmed + Pending OTP)</span>
               </div>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead>
@@ -224,8 +223,8 @@ export default function BookingsPage() {
                         </span>
                       </td>
                       <td style={{ padding: '1rem 0.5rem' }}>
-                        <span className={`badge ${b.status === 'confirmed' ? 'badge-success' : 'badge-warning'}`}>
-                          {b.status === 'pending_otp' ? 'PENDING' : b.status?.toUpperCase()}
+                        <span className={`badge ${b.status === 'cancelled' ? 'badge-danger' : 'badge-success'}`}>
+                          {b.status === 'cancelled' ? 'CANCELLED' : 'CONFIRMED'}
                         </span>
                       </td>
                       <td style={{ padding: '1rem 0.5rem' }}>

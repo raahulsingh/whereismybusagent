@@ -4,8 +4,6 @@ import api from '../../api';
 export default function AgentPaymentPage({ trip, searchInfo, seats, passengers, onBooked, onBack }) {
   const [booking, setBooking] = useState(false);
   const [error, setError] = useState('');
-  const [otpModal, setOtpModal] = useState({ show: false, ref: '', idx: -1 });
-  const [otp, setOtp] = useState('');
   const [stage, setStage] = useState('summary');
   const [countdown, setCountdown] = useState(10);
 
@@ -116,10 +114,6 @@ export default function AgentPaymentPage({ trip, searchInfo, seats, passengers, 
 
         // Book the seat
         const data = await bookPassenger(p);
-        if (data.otpRequired) {
-          setOtpModal({ show: true, ref: data.bookingRef, idx: i });
-          setStage('summary'); setBooking(false); return;
-        }
         refs.push(data.bookingRef || data.booking_ref || 'OK');
       }
       setStage('success');
@@ -129,15 +123,6 @@ export default function AgentPaymentPage({ trip, searchInfo, seats, passengers, 
     }
   };
 
-  const verifyOtp = async (e) => {
-    e.preventDefault();
-    try {
-      await api.post('/agent/book/verify-otp', { bookingRef: otpModal.ref, otp });
-      setOtpModal({ show: false, ref: '', idx: -1 }); setOtp('');
-      setStage('success');
-      setTimeout(() => onBooked({ refs: [otpModal.ref], count: passengers.length, trip, searchInfo, passengers }), 1500);
-    } catch (e) { setError(e.response?.data?.error || 'OTP verification failed'); }
-  };
 
   // FAILED — unlock all seats and auto-redirect in 10s
   useEffect(() => {
@@ -219,30 +204,6 @@ export default function AgentPaymentPage({ trip, searchInfo, seats, passengers, 
   }
 
   // OTP MODAL
-  if (otpModal.show) {
-    return (
-      <div style={{ maxWidth: 450, margin: '40px auto' }}>
-        <div style={{ background: '#fff', borderRadius: 16, padding: 32, boxShadow: '0 4px 24px rgba(0,0,0,0.08)', textAlign: 'center' }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>🔐</div>
-          <h3 style={{ marginBottom: 8, fontSize: 20, fontWeight: 700 }}>Verify Cash Booking</h3>
-          <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>An OTP has been sent to your agent email. Enter it to confirm.</p>
-          <form onSubmit={verifyOtp}>
-            <input required maxLength="6" value={otp} onChange={e => setOtp(e.target.value)}
-              style={{ padding: '14px', fontSize: 24, letterSpacing: '0.3rem', textAlign: 'center', borderRadius: 10, border: '2px solid #e2e8f0', outline: 'none', width: '200px', marginBottom: 16 }}
-              placeholder="------" />
-            {error && <div style={{ color: '#ef4444', fontSize: 13, marginBottom: 12 }}>⚠ {error}</div>}
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-              <button type="button" onClick={() => { setOtpModal({ show: false, ref: '', idx: -1 }); setError(''); }}
-                style={{ padding: '12px 24px', background: '#f1f5f9', border: 'none', borderRadius: 10, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-              <button type="submit" style={{ padding: '12px 32px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontSize: 15 }}>
-                Verify & Confirm
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  }
 
   // SUMMARY
   return (
@@ -276,9 +237,9 @@ export default function AgentPaymentPage({ trip, searchInfo, seats, passengers, 
               { step: '4', text: 'Ticket confirmed instantly!' },
             ] : [
               { step: '1', text: 'Click "Confirm Booking" below' },
-              { step: '2', text: 'OTP sent to your agent email' },
-              { step: '3', text: 'Enter OTP to verify cash collection' },
-              { step: '4', text: 'Ticket confirmed — share with passenger!' },
+              { step: '2', text: 'Cash collection recorded by Agent' },
+              { step: '3', text: 'Ticket confirmed instantly!' },
+              { step: '4', text: 'Share ticket/receipt with passenger' },
             ]).map(s => (
               <div key={s.step} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                 <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#e65100', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, flexShrink: 0 }}>{s.step}</div>

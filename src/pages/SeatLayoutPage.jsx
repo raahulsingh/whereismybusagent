@@ -118,13 +118,9 @@ export default function SeatLayoutPage() {
       
       const res = await api.post('/agent/book', payload);
       
-      if (res.data.otpRequired) {
-        setOtpModal({ show: true, ref: res.data.bookingRef });
-      } else {
-        alert(res.data.message);
-        setSelectedSeat(null);
-        fetchLayout();
-      }
+      alert(res.data.message);
+      setSelectedSeat(null);
+      fetchLayout();
     } catch (e) {
       alert(e.response?.data?.error || 'Booking failed');
     }
@@ -294,7 +290,7 @@ export default function SeatLayoutPage() {
                 <div className="input-group">
                   <label>Payment Method</label>
                   <select value={bookingForm.paymentType} onChange={e=>setBookingForm({...bookingForm, paymentType: e.target.value})}>
-                    <option value="cash">Cash (Agent collects, needs OTP)</option>
+                    <option value="cash">Cash (Direct Confirmation)</option>
                     <option value="prepaid">Online (Prepaid confirmation)</option>
                   </select>
                 </div>
@@ -307,22 +303,6 @@ export default function SeatLayoutPage() {
             </div>
           )}
 
-          {/* OTP Modal */}
-          {otpModal.show && (
-            <div className="card" style={{ borderLeft: '4px solid var(--secondary)' }}>
-              <h3 style={{ marginBottom: '1rem' }}>Verify Cash Booking</h3>
-              <p style={{ marginBottom: '1rem', fontSize: '0.875rem' }}>An OTP has been sent to your agent email. Please enter it to confirm cash collection.</p>
-              <form onSubmit={handleVerifyOtp}>
-                <div className="input-group">
-                  <label>Enter 6-digit OTP</label>
-                  <input required maxLength="6" value={otp} onChange={e=>setOtp(e.target.value)} style={{ letterSpacing: '0.25rem', textAlign: 'center', fontSize: '1.25rem' }} />
-                </div>
-                <button type="submit" className="btn btn-secondary" style={{ width: '100%', marginTop: '0.5rem' }}>
-                  Verify & Confirm Booking
-                </button>
-              </form>
-            </div>
-          )}
         </div>
       </div>
     </div>
